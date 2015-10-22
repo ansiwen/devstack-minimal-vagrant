@@ -58,23 +58,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
   #
-  config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-    vb.memory = 4096
-    vb.cpus = 2
-  end
 
-  config.vm.provider "libvirt" do |domain|
+  config.vm.provider "libvirt" do |domain, override|
     domain.memory = 4096
     domain.cpus = 2
     domain.nested = true
 #    domain.volume_cache = 'none'
   end
 
-
+  config.vm.provider "virtualbox" do |vb, override|
+  #   # Display the VirtualBox GUI when booting the machine
+  #   vb.gui = true
+  #
+  #   # Customize the amount of memory on the VM:
+    vb.memory = 4096
+    vb.cpus = 2
+    override.vm.box = "box-cutter/fedora22"
+  end
 
   #
   # View the documentation for the provider you are using for more
