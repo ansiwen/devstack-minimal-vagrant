@@ -1,20 +1,40 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+## which network prefix to use for fixed IPs (host: .1, devstack-vm: .10)
+$PRIVATE_NET = "192.168.73"
+
+### if you want to clone openstack from a local repo folder, set it here
+### and make sure that the vm backend has read access to it.
+### (on ferdora 22 with libvirt it helps to switch off SELinux)
+#$LOCAL_GIT_REPOS = "repos"
+
+### if you want to use an http proxy, install the vagrant-proxyconf plugin
+### ('$ vagrant plugin install vagrant-proxyconf') and set the proxy here
+#$HTTP_PROXY = "http://#{$PRIVATE_NET}.1:3128/"
+
+### if you use an http proxy, you should also set a specific, local and cache-
+### friendly repo here
+#$YUM_REPO = "http://ftp-stud.hs-esslingen.de/pub"
+
+### if you have a local devpi server running, uncomment and set these two lines
+#$DEVPI_SERVER = "#{$PRIVATE_NET}.1"
+#$DEVPI_URL = "http://#{$DEVPI_SERVER}:3141/root/pypi/+simple/"
+
+
+################################################################################
+
 VAGRANTFILE_API_VERSION = "2" if not defined? VAGRANTFILE_API_VERSION
 
-PRIVATE_NET = "192.168.73"
+if defined? $LOCAL_GIT_REPOS
+  GIT_BASE = "/repos"
+else
+  GIT_BASE = "https://git.openstack.org"
+end
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.hostname = "devstack"
-  # The most common configuration options are documented and commented below.
-  # For a complete reference, please see the online documentation at
-  # https://docs.vagrantup.com.
+  config.vm.define "devstack-vm"
+  config.vm.hostname = "devstack-vm"
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
@@ -32,13 +52,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  config.vm.network "private_network", ip: "#{PRIVATE_NET}.10"
-
-  if Vagrant.has_plugin?("vagrant-proxyconf")
-    config.proxy.http     = "http://#{PRIVATE_NET}.1:3128/"
-    config.proxy.https    = "http://#{PRIVATE_NET}.1:3128/"
-    config.proxy.no_proxy = "localhost,127.0.0.1,#{PRIVATE_NET}.1"
-  end
+  config.vm.network "private_network", ip: "#{$PRIVATE_NET}.10"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -53,6 +67,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   #config.vm.synced_folder ".", "/vagrant", type: "nfs"
   #config.vm.synced_folder ".", "/vagrant", type: "9p"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -64,6 +79,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     domain.cpus = 2
     domain.nested = true
 #    domain.volume_cache = 'none'
+    if $LOCAL_GIT_REPOS
+      override.vm.synced_folder $LOCAL_GIT_REPOS, "/repos", type: "9p"
+    end
   end
 
   config.vm.provider "virtualbox" do |vb, override|
@@ -74,39 +92,61 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     vb.memory = 4096
     vb.cpus = 2
     override.vm.box = "box-cutter/fedora22"
+    if $LOCAL_GIT_REPOS
+      override.vm.synced_folder $LOCAL_GIT_REPOS, "/repos"
+    end
   end
 
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
+  ## Provisioning
 
-  # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies
-  # such as FTP and Heroku are also available. See the documentation at
-  # https://docs.vagrantup.com/v2/push/atlas.html for more information.
-  # config.push.define "atlas" do |push|
-  #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
-  # end
+  if $YUM_REPO
+    config.vm.provision "shell", inline: <<-SHELL
+      sed -i 's/^#baseurl/baseurl/' /etc/yum.repos.d/*
+      sed -i 's/^metalink/#metalink/' /etc/yum.repos.d/*
+      sed -i 's,http://download.fedoraproject.org/pub,#{$YUM_REPO},' /etc/yum.repos.d/*
+    SHELL
+  end
 
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
-  # documentation for more information about their specific syntax and use.
+  if Vagrant.has_plugin?("vagrant-proxyconf") && $HTTP_PROXY
+    config.proxy.http     = $HTTP_PROXY
+    config.proxy.https    = $HTTP_PROXY
+    config.proxy.no_proxy = "localhost,127.0.0.1,#{$PRIVATE_NET}.1"
+    config.vm.provision "shell", inline: <<-SHELL
+      dnf install -y git
+      git config --system url."https://github.com/".insteadOf git@github.com:
+      git config --system url."https://".insteadOf git://
+    SHELL
+  end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    dnf install -y rsyslog joe yum-utils net-tools nfs-utils mlocate telnet sudo git dnf
+  SHELL
+
+  if $DEVPI_SERVER && $DEVPI_URL
+    config.vm.provision "shell", inline: <<-SHELL
+      cat >/etc/pip.conf <<PIPCONF
+[global]
+index-url = #{$DEVPI_URL}
+trusted-host = #{$DEVPI_SERVER}
+PIPCONF
+    SHELL
+  end
+
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
-#    cat > /tmp/pip.conf <<EOF
-#[global]
-#index-url = http://#{PRIVATE_NET}.1:3141/root/pypi/+simple/
-#trusted-host = #{PRIVATE_NET}.1
-#EOF
-#    sudo cp /tmp/pip.conf /etc
-#    sudo sed -i 's/^#baseurl/baseurl/' /etc/yum.repos.d/*
-#    sudo sed -i 's/^metalink/#metalink/' /etc/yum.repos.d/*
-#    sudo sed -i 's,download.fedoraproject.org/pub,mirror2.hs-esslingen.de,' /etc/yum.repos.d/*
-    sudo dnf install -y rsyslog joe yum-utils net-tools nfs-utils mlocate telnet sudo git dnf
     chmod o+x .
-#    git clone /vagrant/repos/openstack-dev/devstack
-    git clone https://git.openstack.org/openstack-dev/devstack
-    cp /vagrant/local.conf devstack/
+    git clone #{GIT_BASE}/openstack-dev/devstack
+  SHELL
+
+  config.vm.provision "file", source: "local.conf", destination: "devstack/local.conf"
+
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
     cd devstack
+    export GIT_BASE=#{GIT_BASE}
     ./stack.sh |& tee /tmp/stack.log
+  SHELL
+
+  config.vm.provision "shell", inline: <<-SHELL
     sudo systemctl enable openvswitch mariadb rabbitmq-server httpd
   SHELL
+
 end
