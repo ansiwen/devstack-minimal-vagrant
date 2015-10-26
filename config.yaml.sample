@@ -1,0 +1,17 @@
+### if you want to clone openstack from a local repo folder, set it here
+### and make sure that the vm backend has read access to it.
+### (on ferdora 22 with libvirt it helps to switch off SELinux)
+#local_git_repos: ./repos
+
+### if you want to use an http proxy, install the vagrant-proxyconf plugin
+### ('$ vagrant plugin install vagrant-proxyconf') and set the proxy here
+#http_proxy: http://192.168.121.1:3128/
+
+### if you use an http proxy, you should also set a specific, local and cache-
+### friendly repo here
+#yum_repo: http://ftp-stud.hs-esslingen.de/pub
+
+### if you have a local devpi server running, uncomment and set these two lines
+#devpi_server: 192.168.121.1
+#devpi_port: 3141
+#devpi_path: root/pypi/+simple/

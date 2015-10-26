@@ -1,32 +1,16 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-## which network prefix to use for fixed IPs (host: .1, devstack-vm: .10)
-$PRIVATE_NET = "192.168.73"
-
-### if you want to clone openstack from a local repo folder, set it here
-### and make sure that the vm backend has read access to it.
-### (on ferdora 22 with libvirt it helps to switch off SELinux)
-#$LOCAL_GIT_REPOS = "repos"
-
-### if you want to use an http proxy, install the vagrant-proxyconf plugin
-### ('$ vagrant plugin install vagrant-proxyconf') and set the proxy here
-#$HTTP_PROXY = "http://#{$PRIVATE_NET}.1:3128/"
-
-### if you use an http proxy, you should also set a specific, local and cache-
-### friendly repo here
-#$YUM_REPO = "http://ftp-stud.hs-esslingen.de/pub"
-
-### if you have a local devpi server running, uncomment and set these two lines
-#$DEVPI_SERVER = "#{$PRIVATE_NET}.1"
-#$DEVPI_URL = "http://#{$DEVPI_SERVER}:3141/root/pypi/+simple/"
-
-
-################################################################################
-
 VAGRANTFILE_API_VERSION = "2" if not defined? VAGRANTFILE_API_VERSION
 
-if defined? $LOCAL_GIT_REPOS
+require 'yaml'
+if File.file?('config.yaml')
+  conf = YAML.load_file('config.yaml')
+else
+  raise "Configuration file 'config.yaml' does not exist."
+end
+
+if conf["local_git_repos"]
   GIT_BASE = "/repos"
 else
   GIT_BASE = "https://git.openstack.org"
@@ -52,7 +36,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  config.vm.network "private_network", ip: "#{$PRIVATE_NET}.10"
+  #config.vm.network "private_network", ip: 192.168.73.10"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -79,8 +63,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     domain.cpus = 2
     domain.nested = true
 #    domain.volume_cache = 'none'
-    if $LOCAL_GIT_REPOS
-      override.vm.synced_folder $LOCAL_GIT_REPOS, "/repos", type: "9p"
+    if conf["local_git_repos"]
+      override.vm.synced_folder conf["local_git_repos"], "/repos", type: "9p"
     end
   end
 
@@ -91,25 +75,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #   # Customize the amount of memory on the VM:
     vb.memory = 4096
     vb.cpus = 2
-    if $LOCAL_GIT_REPOS
-      override.vm.synced_folder $LOCAL_GIT_REPOS, "/repos"
+    if conf["local_git_repos"]
+      override.vm.synced_folder conf["local_git_repos"], "/repos"
     end
   end
 
   ## Provisioning
 
-  if $YUM_REPO
+  if conf["yum_repo"]
     config.vm.provision "shell", inline: <<-SHELL
       sed -i 's/^#baseurl/baseurl/' /etc/yum.repos.d/*
       sed -i 's/^metalink/#metalink/' /etc/yum.repos.d/*
-      sed -i 's,http://download.fedoraproject.org/pub,#{$YUM_REPO},' /etc/yum.repos.d/*
+      sed -i 's,http://download.fedoraproject.org/pub,#{conf["yum_repo"]},' /etc/yum.repos.d/*
     SHELL
   end
 
-  if Vagrant.has_plugin?("vagrant-proxyconf") && $HTTP_PROXY
-    config.proxy.http     = $HTTP_PROXY
-    config.proxy.https    = $HTTP_PROXY
-    config.proxy.no_proxy = "localhost,127.0.0.1,#{$PRIVATE_NET}.1"
+  if Vagrant.has_plugin?("vagrant-proxyconf") && conf["http_proxy"]
+    config.proxy.http     = conf["http_proxy"]
+    config.proxy.https    = conf["http_proxy"]
+    config.proxy.no_proxy = "localhost,127.0.0.1"
     config.vm.provision "shell", inline: <<-SHELL
       dnf install -y git
       git config --system url."https://github.com/".insteadOf git@github.com:
@@ -121,12 +105,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     dnf install -y rsyslog joe yum-utils net-tools nfs-utils mlocate telnet sudo git dnf
   SHELL
 
-  if $DEVPI_SERVER && $DEVPI_URL
+  if conf["devpi_server"] && conf["devpi_port"] && conf["devpi_path"]
     config.vm.provision "shell", inline: <<-SHELL
       cat >/etc/pip.conf <<PIPCONF
 [global]
-index-url = #{$DEVPI_URL}
-trusted-host = #{$DEVPI_SERVER}
+index-url = http://#{conf["devpi_server"]}:#{conf["devpi_port"]}/#{conf["devpi_path"]}
+trusted-host = #{conf["devpi_server"]}
 PIPCONF
     SHELL
   end
