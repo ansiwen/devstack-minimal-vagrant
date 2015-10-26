@@ -38,7 +38,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "rarguello/fedora-22"
+  config.vm.box = "ansiwen/devstack-base"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -91,7 +91,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #   # Customize the amount of memory on the VM:
     vb.memory = 4096
     vb.cpus = 2
-    override.vm.box = "box-cutter/fedora22"
     if $LOCAL_GIT_REPOS
       override.vm.synced_folder $LOCAL_GIT_REPOS, "/repos"
     end
