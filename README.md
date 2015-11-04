@@ -20,6 +20,12 @@ It's very simple:
 
 After a while (around 10 minutes) you have an openstack runnig, and you can access the web-interface at http://localhost:8080/
 
+With `vagrant ssh` you can log in to the VM.
+
+In you current directory there will be a folder `openstack`, which contains the openstack source code and is shared with the devstack VM.
+
+Inside of the VM you find the openstack data in /var/openstack.
+
 ## Configuration
 
 If you wanna customize your configuration, copy `config.yaml.sample` to `config.yaml` end edit accordingly.
