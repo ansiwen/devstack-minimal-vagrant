@@ -1,11 +1,12 @@
 [[local|localrc]]
-DEST=/home/vagrant/stack
-DATA_DIR=$DEST/data
+DEST=/vagrant/openstack
+DATA_DIR=/var/openstack
 SERVICE_DIR=$DEST/status
 SCREEN_LOGDIR=$DATA_DIR/logs/
 LOGFILE=$DATA_DIR/logs/devstacklog.txt
 VERBOSE=True
 USE_SCREEN=True
+WHEELHOUSE=/var/wheelhouse
 
 RABBIT_PASSWORD=123456
 MYSQL_PASSWORD=123456
@@ -21,7 +22,7 @@ FIXED_NETWORK_SIZE=256
 VIRT_DRIVER=libvirt
 LOG_COLOR=True
 
-ENABLED_SERVICES=g-api,g-reg,key,n-api,n-cpu,n-sch,n-cond,mysql,rabbit,dstat,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,horizon
+ENABLED_SERVICES=g-api,g-reg,key,n-crt,n-api,n-cpu,n-sch,n-cond,mysql,rabbit,dstat,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,horizon
 
 IMAGE_URLS="http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-disk.img"
 export YUM=dnf

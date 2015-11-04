@@ -1,7 +1,8 @@
-### if you want to clone openstack from a local repo folder, set it here
-### and make sure that the vm backend has read access to it.
-### (on ferdora 22 with libvirt it helps to switch off SELinux)
-#local_git_repos: ./repos
+### set here which local.conf file you want to use for devstack
+#local_conf: my_local.conf
+
+### if you want to clone openstack from a local repo folder, set it here.
+#local_git_repos: ../repos
 
 ### if you want to use an http proxy, install the vagrant-proxyconf plugin
 ### ('$ vagrant plugin install vagrant-proxyconf') and set the proxy here

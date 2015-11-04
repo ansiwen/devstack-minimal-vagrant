@@ -4,17 +4,10 @@
 VAGRANTFILE_API_VERSION = "2" if not defined? VAGRANTFILE_API_VERSION
 
 require 'yaml'
-if File.file?('config.yaml')
-  conf = YAML.load_file('config.yaml')
-else
-  raise "Configuration file 'config.yaml' does not exist."
-end
+conf = File.file?('config.yaml') ? YAML.load_file('config.yaml') : {}
 
-if conf["local_git_repos"]
-  GIT_BASE = "/repos"
-else
-  GIT_BASE = "https://git.openstack.org"
-end
+GIT_BASE = conf["local_git_repos"] ? "/repos" : "https://git.openstack.org"
+LOCAL_CONF = conf["local_conf"] ? conf["local_conf"] : "local.conf.default"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "devstack-vm"
@@ -51,7 +44,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   #config.vm.synced_folder ".", "/vagrant", type: "nfs"
   #config.vm.synced_folder ".", "/vagrant", type: "9p"
-  config.vm.synced_folder ".", "/vagrant", disabled: true
+  #config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -63,8 +56,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     domain.cpus = 2
     domain.nested = true
 #    domain.volume_cache = 'none'
+    override.vm.synced_folder ".", "/vagrant", type: "nfs"
     if conf["local_git_repos"]
-      override.vm.synced_folder conf["local_git_repos"], "/repos", type: "9p"
+      override.vm.synced_folder conf["local_git_repos"], "/repos", type: "nfs"
     end
   end
 
@@ -75,6 +69,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #   # Customize the amount of memory on the VM:
     vb.memory = 4096
     vb.cpus = 2
+    override.vm.synced_folder ".", "/vagrant"
     if conf["local_git_repos"]
       override.vm.synced_folder conf["local_git_repos"], "/repos"
     end
@@ -94,6 +89,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.proxy.http     = conf["http_proxy"]
     config.proxy.https    = conf["http_proxy"]
     config.proxy.no_proxy = "localhost,127.0.0.1"
+    config.proxy.no_proxy += ",#{conf["devpi_server"]}" if conf["devpi_server"]
     config.vm.provision "shell", inline: <<-SHELL
       dnf install -y git
       git config --system url."https://github.com/".insteadOf git@github.com:
@@ -107,8 +103,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   if conf["devpi_server"] && conf["devpi_port"] && conf["devpi_path"]
     config.vm.provision "shell", inline: <<-SHELL
-      cat >/etc/pip.conf <<PIPCONF
-[global]
+      cat >>/etc/pip.conf <<PIPCONF
 index-url = http://#{conf["devpi_server"]}:#{conf["devpi_port"]}/#{conf["devpi_path"]}
 trusted-host = #{conf["devpi_server"]}
 PIPCONF
@@ -120,7 +115,7 @@ PIPCONF
     git clone #{GIT_BASE}/openstack-dev/devstack
   SHELL
 
-  config.vm.provision "file", source: "local.conf", destination: "devstack/local.conf"
+  config.vm.provision "file", source: LOCAL_CONF, destination: "devstack/local.conf"
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     cd devstack
