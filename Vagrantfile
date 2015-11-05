@@ -124,7 +124,7 @@ PIPCONF
   SHELL
 
   config.vm.provision "shell", inline: <<-SHELL
-    sudo systemctl enable openvswitch mariadb rabbitmq-server httpd
+    sudo systemctl enable mariadb rabbitmq-server httpd
   SHELL
 
 end

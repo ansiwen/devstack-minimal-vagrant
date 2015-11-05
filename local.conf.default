@@ -22,9 +22,9 @@ FIXED_NETWORK_SIZE=256
 VIRT_DRIVER=libvirt
 LOG_COLOR=True
 
-#ENABLED_SERVICES=g-api,g-reg,key,n-crt,n-api,n-cpu,n-sch,n-cond,mysql,rabbit,dstat,quantum,q-svc,q-agt,q-dhcp,q-l3,q-meta,horizon
-#disable_service horizon heat h-eng h-api h-api-cfn h-api-cw
-#disable_service tempest
+#ENABLED_SERVICES=g-api,g-reg,key,n-crt,n-api,n-cpu,n-sch,n-cond,mysql,rabbit,dstat,q-svc,q-agt,q-dhcp,q-l3,q-meta,horizon
+#disable_service heat h-eng h-api h-api-cfn h-api-cw
+disable_service tempest
 
 IMAGE_URLS="http://download.cirros-cloud.net/0.3.3/cirros-0.3.3-x86_64-disk.img"
 export YUM=dnf
