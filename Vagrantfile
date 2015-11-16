@@ -104,6 +104,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   if conf["devpi_server"] && conf["devpi_port"] && conf["devpi_path"]
     config.vm.provision "shell", inline: <<-SHELL
       cat >>/etc/pip.conf <<PIPCONF
+[global]
 index-url = http://#{conf["devpi_server"]}:#{conf["devpi_port"]}/#{conf["devpi_path"]}
 trusted-host = #{conf["devpi_server"]}
 PIPCONF
