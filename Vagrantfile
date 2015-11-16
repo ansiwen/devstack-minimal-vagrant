@@ -92,8 +92,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.proxy.no_proxy += ",#{conf["devpi_server"]}" if conf["devpi_server"]
     config.vm.provision "shell", inline: <<-SHELL
       dnf install -y git
-      git config --system url."https://github.com/".insteadOf git@github.com:
-      git config --system url."https://".insteadOf git://
+      git config --system url."http://github.com/".insteadOf git@github.com:
+      git config --system url."http://".insteadOf git://
     SHELL
   end
 
