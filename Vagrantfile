@@ -99,17 +99,26 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.provision "shell", inline: <<-SHELL
     dnf install -y rsyslog joe yum-utils net-tools nfs-utils mlocate telnet sudo git dnf
+    mkdir -p /vagrant/.wheelhouse
+    cat >/etc/pip.conf <<PIPCONF
+[global]
+wheel-dir = /vagrant/.wheelhouse
+find-links = file:///vargant/.wheelhouse
+PIPCONF
   SHELL
 
   if conf["devpi_server"] && conf["devpi_port"] && conf["devpi_path"]
     config.vm.provision "shell", inline: <<-SHELL
       cat >>/etc/pip.conf <<PIPCONF
-[global]
 index-url = http://#{conf["devpi_server"]}:#{conf["devpi_port"]}/#{conf["devpi_path"]}
 trusted-host = #{conf["devpi_server"]}
 PIPCONF
     SHELL
   end
+
+  config.vm.provision "shell", inline: <<-SHELL
+    pip install -U pip wheel setuptools tox nose2
+  SHELL
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     chmod o+x .
@@ -121,11 +130,14 @@ PIPCONF
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     cd devstack
     export GIT_BASE=#{GIT_BASE}
+    export PIP_FIND_LINKS=file:///vagrant/.wheelhouse
+    export PIP_WHEEL_DIR=/vagrant/.wheelhouse
     ./stack.sh |& tee /tmp/stack.log
   SHELL
 
   config.vm.provision "shell", inline: <<-SHELL
-    sudo systemctl enable mariadb rabbitmq-server httpd
+    find /root/.cache/pip/wheels -type f -name *.whl -exec cp -n \\{\\} /vagrant/.wheelhouse \\; 2>/dev/null
+    systemctl enable mariadb rabbitmq-server httpd
   SHELL
 
 end
