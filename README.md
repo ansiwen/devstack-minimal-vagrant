@@ -24,7 +24,9 @@ With `vagrant ssh` you can log in to the VM.
 
 In you current directory there will be a folder `openstack`, which contains the openstack source code and is shared with the devstack VM.
 
-Inside of the VM you find the openstack data in /var/openstack.
+Inside of the VM you find the shared openstack sources in /vargant/openstack and the data in /var/openstack.
+
+In the .wheelhouse/ directory (not to confuse with openstack/.wheelhouse of former DevStacks) you can find all wheels that had been created while running stack.sh. This can be very useful for running unit tests on the host, which is a lot faster because of faster file access.
 
 ## Configuration
 
@@ -53,9 +55,18 @@ $ sudo systemctl restart squid
 
 `yum_repo` - if you use a caching proxy, you should also select a specific fedora repository mirror, that is caching friendly. This you can do here.
 
-`devpi_server`, `devpi_port`, `devpi_path` - You can easily setup a cache for the pip repository with `devpi-server`. Just do 
+`devpi_server`, `devpi_port`, `devpi_path` - Although most wheels are stored under .wheelhouse, it can still be useful to have a local pip cache. You can easily setup a cache for the pip repository with `devpi-server`. Just do 
 ```
 $ pip install --user devpi-server
 $ devpi-server --start --host=0.0.0.0
 ```
 and uncomment these settings in `config.yaml`. You also have to change `devpi_server` to one of your local IPs.
+
+## Caveats
+
+Doing the unit-tests from inside the VM with the NFS mounted sources is quite slow. Therefore I run them from the host with the PIP_FIND_LINKS environment variable set accordingly to the .wheelhouse directory, so you don't have to spoil your system with all the requirements. (venv doesn't really seem to help here, since there are native libraries involved.)
+
+## TODOs
+
+* make it work with lxc containers, which would allow a lot more efficient bind mounts for the shared folder.
+* extend it to multi-node setups.
