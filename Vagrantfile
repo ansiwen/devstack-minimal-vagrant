@@ -52,8 +52,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #
 
   config.vm.provider "libvirt" do |domain, override|
-    domain.memory = 4096
-    domain.cpus = 2
+    domain.memory = 8192
+    domain.cpus = 4
     domain.nested = true
 #    domain.volume_cache = 'none'
     override.vm.synced_folder ".", "/vagrant", type: "nfs"
@@ -67,8 +67,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #   vb.gui = true
   #
   #   # Customize the amount of memory on the VM:
-    vb.memory = 4096
-    vb.cpus = 2
+    vb.memory = 8192
+    vb.cpus = 4
     override.vm.synced_folder ".", "/vagrant"
     if conf["local_git_repos"]
       override.vm.synced_folder conf["local_git_repos"], "/repos"
